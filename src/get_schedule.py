@@ -2,6 +2,14 @@ import requests
 import logging
 import datetime
 
+class Week:
+    def __init__(self, week: "list[Day]", date: datetime.datetime) -> None:
+        self._week = week
+        self._date = date
+        
+    def __getitem__(self, key: int) -> "Day":
+        return self._week[key]
+
 class Day:
     def __init__(self, days: "list[Lesson]", date: datetime.datetime) -> None:
         self._days = days
@@ -10,29 +18,57 @@ class Day:
     @property
     def date(self) -> datetime.datetime:
         return self._date
+    
+    @property
+    def weekday(self) -> int:
+        return self._date.weekday()
         
     @property
     def lessons(self) -> "list[Lesson]":
         return self._days
-
-class Lesson:
-    def __init__(self, lesson: dict):
-        self.type = lesson["type"]
-        self.name = lesson["name"]
-        self.room = lesson["room"]
-        self.group_name = lesson["group_name"]
-        self.time_start = datetime.datetime.strptime(lesson["time_start"], "%H:%M")
-        self.time_end = datetime.datetime.strptime(lesson["time_end"], "%H:%M")
-        
-    def __str__(self) -> str:
-        return f"{self.name} ({self.room})"
     
+    def sort(self):
+        self._days.sort()
+        
+class Task:
+    def __init__(self, task: dict):
+        self.type = task["type"]
+        self.name = task["name"]
+        self.room = task["room"]
+        self.group_name = task["group_name"]
+        self.time_start = datetime.datetime.strptime(task["time_start"], "%H:%M")
+        self.time_end = datetime.datetime.strptime(task["time_end"], "%H:%M")
+        
     def __cmp__(self, other):
         if self.time_start < other.time_start:
             return -1
         if self.time_start > other.time_start:
             return 1
         return 0
+    
+    def time(self) -> int:
+        return self.time_start.hour * 60 * 60 + self.time_start.minute * 60 + self.time_start.second
+    
+class HomeWork(Task):
+    def __init__(self, homework: dict):
+        super().__init__(homework)
+        
+    def __str__(self) -> str:
+        return f"{self.name} ({self.room})"
+    
+class Eating(Task):
+    def __init__(self, eating: dict):
+        super().__init__(eating)
+        
+    def __str__(self) -> str:
+        return f"{self.name} ({self.room})"
+
+class Lesson(Task):
+    def __init__(self, lesson: dict):
+        super().__init__(lesson)
+        
+    def __str__(self) -> str:
+        return f"{self.name} ({self.room})"
 
 class Schedule:
     def __init__(self):
