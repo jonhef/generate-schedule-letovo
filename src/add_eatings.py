@@ -40,7 +40,7 @@ def get_eatings_monday(class_n: int) -> "dict[str, get_schedule.Eating]":
     if class_n == 10:
         eating["dinner"] = get_schedule.Eating({
             "type": "eating", 
-            "name": "dinner", 
+            "name": "Ужин", 
             "room": "Верхняя столовая", 
             "group_name": "", 
             "time_start": "19:25", 
@@ -49,12 +49,20 @@ def get_eatings_monday(class_n: int) -> "dict[str, get_schedule.Eating]":
     else:
         eating["dinner"] = get_schedule.Eating({
             "type": "eating", 
-            "name": "dinner", 
+            "name": "Ужин", 
             "room": "Верхняя столовая", 
             "group_name": "", 
             "time_start": "18:10", 
             "time_end": "19:25"
         })
+    eating["night_snack"] = get_schedule.Eating({
+        "type": "eating",
+        "name": "Сонник",
+        "room": "",
+        "group_name": "",
+        "time_start": "20:20",
+        "time_end": "20:50"
+    })
 #tuesday-friday
 def get_eatings_tuesday_friday(class_n: int) -> "dict[str, get_schedule.Eating]":
     eating = {}
@@ -86,7 +94,7 @@ def get_eatings_tuesday_friday(class_n: int) -> "dict[str, get_schedule.Eating]"
         })
     eating["snack"] = get_schedule.Eating({
         "type": "eating", 
-        "name": "snack", 
+        "name": "Полдник", 
         "room": "Верхняя столовая", 
         "group_name": "", 
         "time_start": "15:35", 
@@ -94,7 +102,7 @@ def get_eatings_tuesday_friday(class_n: int) -> "dict[str, get_schedule.Eating]"
     })
     eating["snack"] = get_schedule.Eating({
         "type": "eating", 
-        "name": "snack", 
+        "name": "Полдник", 
         "room": "Верхняя столовая", 
         "group_name": "", 
         "time_start": "15:30", 
@@ -102,11 +110,19 @@ def get_eatings_tuesday_friday(class_n: int) -> "dict[str, get_schedule.Eating]"
     })
     eating["dinner"] = get_schedule.Eating({
         "type": "eating", 
-        "name": "dinner", 
+        "name": "Ужин", 
         "room": "Верхняя столовая", 
         "group_name": "", 
         "time_start": "18:15", 
         "time_end": "19:30"
+    })
+    eating["night_snack"] = get_schedule.Eating({
+        "type": "eating",
+        "name": "Сонник",
+        "room": "",
+        "group_name": "",
+        "time_start": "20:20",
+        "time_end": "20:50"
     })
 #saturday
 def get_eatings_saturday(class_n: int) -> "dict[str, get_schedule.Eating]":
@@ -139,7 +155,7 @@ def get_eatings_saturday(class_n: int) -> "dict[str, get_schedule.Eating]":
         })
     eating["snack"] = get_schedule.Eating({
         "type": "eating",
-        "name": "snack",
+        "name": "Полдник",
         "room": "Верхняя столовая",
         "group_name": "",
         "time_start": "16:10",
@@ -147,7 +163,7 @@ def get_eatings_saturday(class_n: int) -> "dict[str, get_schedule.Eating]":
     })
     eating["dinner"] = get_schedule.Eating({
         "type": "eating",
-        "name": "dinner",
+        "name": "Ужин",
         "room": "Верхняя столовая",
         "group_name": "",
         "time_start": "18:20",
@@ -155,6 +171,52 @@ def get_eatings_saturday(class_n: int) -> "dict[str, get_schedule.Eating]":
     })
     eating["night_snack"] = get_schedule.Eating({
         "type": "eating",
-        "name": "night_snack",
-        "room": ""
+        "name": "Сонник",
+        "room": "",
+        "group_name": "",
+        "time_start": "20:20",
+        "time_end": "20:50"
+    })
+#sunday
+def get_eatings_sunday(class_n: int) -> "dict[str, get_schedule.Eating]":
+    eating = {}
+    eating["breakfast"] = get_schedule.Eating({
+        "type": "eating", 
+        "name": "Завтрак", 
+        "room": "Столовая", 
+        "group_name": "", 
+        "time_start": "9:00", 
+        "time_end": "10:00"
+    })
+    eating["lunch"] = get_schedule.Eating({
+        "type": "eating", 
+        "name": "Обед", 
+        "room": "Верхняя столовая", 
+        "group_name": "", 
+        "time_start": "12:15", 
+        "time_end": "13:45"
+    })
+    eating["snack"] = get_schedule.Eating({
+        "type": "eating", 
+        "name": "Полдник", 
+        "room": "Верхняя столовая", 
+        "group_name": "", 
+        "time_start": "15:30", 
+        "time_end": "16:00"
+    })
+    eating["dinner"] = get_schedule.Eating({
+        "type": "eating", 
+        "name": "Ужин", 
+        "room": "Верхняя столовая", 
+        "group_name": "", 
+        "time_start": "18:30", 
+        "time_end": "19:30"
+    })
+    eating["night_snack"] = get_schedule.Eating({
+        "type": "eating",
+        "name": "Сонник",
+        "room": "",
+        "group_name": "",
+        "time_start": "20:20",
+        "time_end": "20:50"
     })
