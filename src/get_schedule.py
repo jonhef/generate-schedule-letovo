@@ -102,7 +102,6 @@ class Schedule:
             today = today + datetime.timedelta(days=1)
         self.table = res
         return res
-    
 
 class StudentLetovo(Schedule):
     def __init__(self):
