@@ -63,6 +63,7 @@ def get_eatings_monday(class_n: int) -> "dict[str, get_schedule.Eating]":
         "time_start": "20:20",
         "time_end": "20:50"
     })
+    return eating
 #tuesday-friday
 def get_eatings_tuesday_friday(class_n: int) -> "dict[str, get_schedule.Eating]":
     eating = {}
@@ -124,6 +125,7 @@ def get_eatings_tuesday_friday(class_n: int) -> "dict[str, get_schedule.Eating]"
         "time_start": "20:20",
         "time_end": "20:50"
     })
+    return eating
 #saturday
 def get_eatings_saturday(class_n: int) -> "dict[str, get_schedule.Eating]":
     eating = {}
@@ -177,6 +179,7 @@ def get_eatings_saturday(class_n: int) -> "dict[str, get_schedule.Eating]":
         "time_start": "20:20",
         "time_end": "20:50"
     })
+    return eating
 #sunday
 def get_eatings_sunday(class_n: int) -> "dict[str, get_schedule.Eating]":
     eating = {}
@@ -220,3 +223,4 @@ def get_eatings_sunday(class_n: int) -> "dict[str, get_schedule.Eating]":
         "time_start": "20:20",
         "time_end": "20:50"
     })
+    return eating

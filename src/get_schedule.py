@@ -2,6 +2,7 @@ import requests
 import logging
 import datetime
 import add_eatings as eating
+import json
 
 class Week:
     def __init__(self, week: "list[Day]", date: datetime.datetime) -> None:
@@ -52,6 +53,18 @@ class Task:
             return 1
         return 0
     
+    def __lt__(self, other):
+        return self.time_start < other.time_start
+    
+    def __le__(self, other):
+        return self.time_start <= other.time_start
+    
+    def __gt__(self, other):
+        return self.time_start > other.time_start
+    
+    def __ge__(self, other):
+        return self.time_start >= other.time_start
+    
     def time(self) -> int:
         return self.time_start.hour * 60 * 60 + self.time_start.minute * 60 + self.time_start.second
     
@@ -62,12 +75,18 @@ class HomeWork(Task):
     def __str__(self) -> str:
         return f"{self.name} ({self.room})"
     
+    def __cmp__(self, other):
+        return super().__cmp__(other)
+    
 class Eating(Task):
     def __init__(self, eating: dict):
         super().__init__(eating)
         
     def __str__(self) -> str:
         return f"{self.name} ({self.room})"
+    
+    def __cmp__(self, other):
+        return super().__cmp__(other)
 
 class Lesson(Task):
     def __init__(self, lesson: dict):
@@ -75,6 +94,9 @@ class Lesson(Task):
         
     def __str__(self) -> str:
         return f"{self.name} ({self.room})"
+
+    def __cmp__(self, other):
+        return super().__cmp__(other)
 
 #нужен класс, наследованный от этого
 class Schedule:
@@ -98,16 +120,16 @@ class Schedule:
             for j in obj:
                 if j["type"] == "lesson":
                     temp.append(Lesson(j))
-            Week[i] = Day(temp, today)
+            res[i] = Day(temp, today)
             today = today + datetime.timedelta(days=1)
         self.table = res
         return res
 
 class StudentLetovo(Schedule):
-    def __init__(self):
-        self.init()
+    def __init__(self, login = None, password = None):
+        self.init(login, password)
         
-    def __init__(self, student: dict):
+    def init_from_dict(self, student: dict = None):
         self.firstname = student["firstname_ru"] if student["firstname_ru"] is not None else student["firstname_en"]
         self.lastname = student["lastname_ru"] if student["lastname_ru"] is not None else student["lastname_en"]
         self.middlename = student["middlename_ru"] if student["middlename_ru"] is not None else student["middlename_en"]
@@ -115,11 +137,16 @@ class StudentLetovo(Schedule):
         self.class_n = student["enrollee_class_id"]
         self.id = student["id"]
         self.email = student["email"]
-        self.session = requests.session()
         
-    def init(self):
-        self.login()
+    def me(self):
+        req = self.session.post("https://elk.letovo.ru/api/me", headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"})
+        return req.json()
+        
+    def init(self, login = None, password = None):
+        self.session = requests.session()
+        self.login(login, password)
         self.schedule = self.get_schedule()
+        self.init_from_dict(self.me()["user"])
         monday = eating.get_eatings_monday(self.class_n)
         tuesday_friday = eating.get_eatings_tuesday_friday(self.class_n)
         saturday = eating.get_eatings_saturday(self.class_n)
@@ -153,7 +180,36 @@ class StudentLetovo(Schedule):
                 password = input("Please enter your password: ")
                 choice = input(f"Is your password {password}?(y/n)")
             print("-------------------------------")
-        req = self.session.post("https://elk.letovo.ru/api/login", data="{\"email\": " + login + ", \"password\": " + password + ", \"params\" = []}")
+        self.session.headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
+        req = self.session.get("https://elk.letovo.ru")
+        req = self.session.get("https://elk.letovo.ru/js/jquery.min.js")
+        req = self.session.get("https://elk.letovo.ru/js/jquery-ui.js")
+        req = self.session.get("https://elk.letovo.ru/js/datepicker-ru.js")
+        req = self.session.get("https://elk.letovo.ru/js/app.js")
+        req = self.session.get("https://elk.letovo.ru/js/svg.js")
+        req = self.session.get("https://elk.letovo.ru/js/8602.js")
+        req = self.session.get("https://chat.letovo.ru/livechat/rocketchat-livechat.min.js")
+        req = self.session.get("https://elk.letovo.ru/js/3335.js")
+        req = self.session.get("https://chat.letovo.ru/livechat")
+        req = self.session.get("https://elk.letovo.ru/apple-touch-icon.png")
+        req = self.session.get("https://elk.letovo.ru/favicon.svg")
+        req = self.session.get("https://chat.letovo.ru/livechat/34248.85b13.js")
+        req = self.session.get("https://chat.letovo.ru/livechat/polyfills.a34ad.js")
+        req = self.session.get("https://chat.letovo.ru/livechat/77487.6fb16.js")
+        req = self.session.get("https://chat.letovo.ru/livechat/bundle.c3f51.js")
+        req = self.session.get("https://chat.letovo.ru/livechat/88157.chunk.7aaa4.js")
+        req = self.session.get("https://chat.letovo.ru/livechat/2728.chunk.18521.css")
+        req = self.session.get("https://chat.letovo.ru/livechat/2728.chunk.3d2fa.js")
+        req = self.session.get("https://chat.letovo.ru/livechat/39537.chunk.a4bdf.js")
+        req = self.session.get("https://chat.letovo.ru/api/v1/livechat/config")
+        req = self.session.get("https://chat.letovo.ru/livechat/50482.chunk.714f6.js")
+        req = self.session.get("https://chat.letovo.ru/livechat/86443.chunk.15f26.js")
+        req = self.session.get("https://chat.letovo.ru/sounds/chime.mp3")
+        data = json.dumps({"email":login, "password":password, "params":[]})
+        req = self.session.post("https://elk.letovo.ru/api/login", data=data, headers={
+            "Content-Type": "application/json;charset=UTF-8",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
+        }, verify=False)
         if req.status_code == 401:
             logging.error("Login failed")
             return False
