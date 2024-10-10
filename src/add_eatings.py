@@ -31,7 +31,7 @@ def get_eatings_monday(class_n: int) -> "dict[str, get_schedule.Eating]":
         })
     eating["snack"] = get_schedule.Eating({
         "type": "eating", 
-        "name": "snack", 
+        "name": "Полдник", 
         "room": "Верхняя столовая", 
         "group_name": "", 
         "time_start": "15:35", 

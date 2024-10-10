@@ -114,7 +114,7 @@ class Schedule:
             if req.status_code != 200:
                 logging.error("Failed to get schedule")
                 res.append([])
-                continue
+                continue    
             obj = req.json()
             temp = []
             for j in obj:
