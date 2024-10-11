@@ -1,4 +1,4 @@
-import get_schedule
+import schedule
 import icalendar
 import datetime
 import pytz
@@ -7,7 +7,7 @@ class GenerateICS:
     def __init__(self):
         pass
     
-    def generate(self, schedule: get_schedule.Schedule) -> bool:
+    def generate(self, schedule: schedule.Schedule) -> bool:
         self.calendar = icalendar.Calendar()
         self.eatings = icalendar.Calendar()
         self.eatings.add("prodid", "https://github.com/jonhef/generate-schedule-letovo")

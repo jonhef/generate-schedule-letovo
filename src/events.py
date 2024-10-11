@@ -1,9 +1,9 @@
-import get_schedule
+import schedule
 
-class Event(get_schedule.Task):
+class Event(schedule.Task):
     pass
 
-def add_letovo_wednesday(schedule: get_schedule.Schedule):
+def add_letovo_wednesday(schedule: schedule.Schedule):
     schedule.table.week[2].lessons.append(Event({
         "type": "event",
         "name": "Летовская среда",
@@ -14,7 +14,7 @@ def add_letovo_wednesday(schedule: get_schedule.Schedule):
     }))
     schedule.table.week[2].sort()
 
-def add_event(schedule: get_schedule.Schedule, name: str, room: str, time_start: str, time_end: str, weekday: int):
+def add_event(schedule: schedule.Schedule, name: str, room: str, time_start: str, time_end: str, weekday: int):
     """schedule - your schedule where you want to add the event
     room - room where the event will be
     time_start - time when the event will start(in format %H:%M)

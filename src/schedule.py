@@ -1,7 +1,7 @@
 import requests
 import logging
 import datetime
-import add_eatings as eating
+import eatings as eating
 import json
 
 class Week:
@@ -36,6 +36,10 @@ class Day:
     
     def sort(self):
         self._days.sort()
+        
+    def add(self, task: "Task"):
+        self.lessons.append(task)
+        self.sort()
         
 class Task:
     def __init__(self, task: dict):
@@ -101,7 +105,7 @@ class Lesson(Task):
 #нужен класс, наследованный от этого
 class Schedule:
     def __init__(self):
-        self.table = None
+        self.table: Week = None
         
     def get_schedule(self) -> "Week":
         today = datetime.datetime.today()
