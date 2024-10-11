@@ -145,12 +145,8 @@ class StudentLetovo(Schedule):
     def me(self):
         req = self.session.post("https://elk.letovo.ru/api/me", headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"})
         return req.json()
-        
-    def init(self, login = None, password = None):
-        self.session = requests.session()
-        self.login(login, password)
-        self.schedule = self.get_schedule()
-        self.init_from_dict(self.me()["user"])
+    
+    def add_eatings(self):
         monday = eating.get_eatings_monday(self.class_n)
         tuesday_friday = eating.get_eatings_tuesday_friday(self.class_n)
         saturday = eating.get_eatings_saturday(self.class_n)
@@ -166,6 +162,13 @@ class StudentLetovo(Schedule):
             self.schedule[6].lessons.append(v)
         for i in range(0, 7):
             self.schedule[i].sort()
+        
+    def init(self, login = None, password = None):
+        self.session = requests.session()
+        self.login(login, password)
+        self.schedule = self.get_schedule()
+        self.init_from_dict(self.me()["user"])
+        
     
     def login(self, login: str = None, password: str = None) -> bool:
         if login is None or password is None:
