@@ -3,6 +3,8 @@ import logging
 import datetime
 import eatings as eating
 import json
+import re
+import bs4
 
 class Week:
     def __init__(self, week: "list[Day]", date: datetime.datetime) -> None:
@@ -130,6 +132,47 @@ class Schedule:
         return res
 
 class StudentLetovo(Schedule):
+    def login_student_letovo(self, login: str = None, password: str = None):
+        if login is None:
+            self.student_login = self.email.split('@')[0]
+        if password is None:
+            self.student_password = self.password
+        verify = True # Set to False when using a proxy
+        r_csrf = self.session.get("https://student.letovo.ru/login", verify=verify)
+        csrf = re.search("(?<=_token( )*:( )*')[a-zA-Z0-9]+", r_csrf.text).group(0)
+        r_login = self.session.post("https://student.letovo.ru/login", data={
+            "_token": csrf,
+            "login": self.student_login,
+            "password": self.student_password
+        }, headers={
+            "X-Csrf-Token": csrf
+        }, verify=verify)
+        
+    def add_summatives(self):
+        # https://student.letovo.ru/?r=student&part_student=summative
+        req = self.session.get("https://student.letovo.ru/?r=student&part_student=summative")
+        soup = bs4.BeautifulSoup(req.text, "html.parser")
+        table_fix = soup.find(id="table_fix").find("tbody")
+        for tr in table_fix.find_all("tr"):
+            found = tr.find_all("td")
+            date = datetime.datetime.strptime(found[0].text, "%Y-%m-%d")
+            subject = found[1].text
+            group = found[2].text
+            theme = found[3].text
+            criterias = re.compile(r"([A-D])").findall(found[4].text)
+            if date <= self.table[6].date:
+                for i in range(0, len(self.table[date.weekday()].lessons)):
+                    if self.table[date.weekday()].lessons[i].name == subject:
+                        break
+                self.table[date.weekday()].add(Lesson({
+                    "type": "event",
+                    "name": f"""Самматив({subject}), критерии """ + (f"{j} " for j in criterias),
+                    "room": self.table[date.weekday()].lessons[i].room,
+                    "group_name": group,
+                    "time_start": self.table[date.weekday()].lessons[i].time_start,
+                    "time_end": self.table[date.weekday()].lessons[i + (1 if self.table[date.weekday()].lessons[i+1] == subject else 0)].time_end
+                }))
+        
     def __init__(self, login = None, password = None):
         self.init(login, password)
         
@@ -140,7 +183,7 @@ class StudentLetovo(Schedule):
         self.gender = student["gender"]
         self.class_n = student["enrollee_class_id"]
         self.id = student["id"]
-        self.email = student["email"]
+        self.email: str = student["email"]
         
     def me(self):
         req = self.session.post("https://elk.letovo.ru/api/me", headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"})
