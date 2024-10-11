@@ -1,7 +1,6 @@
 import schedule
 import icalendar
 import datetime
-import pytz
 
 class GenerateICS:
     def __init__(self):
