@@ -162,9 +162,6 @@ class StudentLetovo(Schedule):
             self.schedule[6].lessons.append(v)
         for i in range(0, 7):
             self.schedule[i].sort()
-            
-    def add_homework(self, how_much_hours: float):
-        pass
     
     def login(self, login: str = None, password: str = None) -> bool:
         if login is None or password is None:
