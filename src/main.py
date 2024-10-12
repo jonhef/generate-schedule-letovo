@@ -10,4 +10,4 @@ if __name__ == "__main__":
     schedule.add_eatings()
     generator = calendargenerator.GenerateICS()
     generator.generate(schedule)
-    generator.save("calendar.ics", "eatings.ics")
+    generator.save("calendar.ics", "eatings.ics", "events.ics")
