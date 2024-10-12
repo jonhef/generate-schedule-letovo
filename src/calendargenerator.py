@@ -6,7 +6,7 @@ class GenerateICS:
     def __init__(self):
         pass
     
-    def generate(self, schedule: schedule.Schedule) -> bool:
+    def generate(self, schedule: schedule.Schedule, skip: list[str] = []) -> bool:
         self.calendar = icalendar.Calendar()
         self.eatings = icalendar.Calendar()
         self.eatings.add("prodid", "https://github.com/jonhef/generate-schedule-letovo")
@@ -19,6 +19,8 @@ class GenerateICS:
         week = schedule.schedule
         for i in range(0, 7):
             for j in range(0, len(week[i].lessons)):
+                if week[i].lessons[j].name in skip:
+                    continue
                 e = icalendar.Event()
                 e.name = "VEVENT"
                 e.add("summary", week[i].lessons[j].name)
@@ -34,7 +36,7 @@ class GenerateICS:
                 #e.alarms.append(ics.alarm.DisplayAlarm(week[i].lessons[j].time_start - datetime.timedelta(minutes=5), display_text=f"{e.name} ({e.description})"))
                 if week[i].lessons[j].type == "eating":
                     self.eatings.add_component(e)
-                elif week[i].lessons[j].type == "events":
+                elif week[i].lessons[j].type == "event":
                     self.events.add_component(e)
                 else:
                     self.calendar.add_component(e)
