@@ -52,6 +52,7 @@ class Task:
         self.group_name = task["group_name"]
         self.time_start = datetime.datetime.strptime(task["time_start"], "%H:%M")
         self.time_end = datetime.datetime.strptime(task["time_end"], "%H:%M")
+        self.description = task.get("description")
         
     def __cmp__(self, other):
         if self.time_start < other.time_start:
@@ -108,10 +109,10 @@ class Lesson(Task):
 #нужен класс, наследованный от этого
 class Schedule:
     def __init__(self):
-        self.table: Week = None
+        self.schedule: Week = None
         
-    def get_schedule(self) -> "Week":
-        today = datetime.datetime.today()
+    def get_schedule(self, first_day: datetime.datetime = None) -> "Week":
+        today = datetime.datetime.today() if first_day is None else first_day
         weekday = today.weekday()
         if weekday != 0:
             today = today - datetime.timedelta(days=weekday)
@@ -129,7 +130,8 @@ class Schedule:
                     temp.append(Lesson(j))
             res[i] = Day(temp, today)
             today = today + datetime.timedelta(days=1)
-        self.table = res
+        # self.table = res
+        self.schedule = res
         return res
 
 class StudentLetovo(Schedule):
@@ -162,6 +164,7 @@ class StudentLetovo(Schedule):
         }, verify=verify)
         self.student_phpsessid = phpsessid
         self.student_csrf = csrf
+        self._student_letovo_home()
 
         # print("PHPSESSID: " + phpsessid)
 
@@ -175,7 +178,7 @@ class StudentLetovo(Schedule):
         
     def add_summatives(self):
         # https://student.letovo.ru/?r=student&part_student=summative
-        self._student_letovo_home()
+        req = self._student_letovo_home()
         req = self.session.get("https://student.letovo.ru/student/academic/summatives", headers = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
@@ -189,6 +192,8 @@ class StudentLetovo(Schedule):
             "PHPSESSID": self.student_phpsessid
         })
         soup = bs4.BeautifulSoup(req.text, "html.parser")
+        if soup.find(id="table_fix") is None:
+            return
         table_fix = soup.find(id="table_fix").find("tbody")
         for tr in table_fix.find_all("tr"):
             found = tr.find_all("td")
@@ -197,21 +202,21 @@ class StudentLetovo(Schedule):
             group = found[2].text
             theme = found[3].text
             criterias = re.compile(r"([A-D])").findall(found[4].text)
-            if date <= self.table[6].date:
-                for i in range(0, len(self.table[date.weekday()].lessons)):
-                    if self.table[date.weekday()].lessons[i].name == subject:
+            if date <= self.schedule[6].date:
+                for i in range(0, len(self.schedule[date.weekday()].lessons)):
+                    if self.schedule[date.weekday()].lessons[i].name == subject:
                         break
                 criterias_str = ""
                 for j in criterias:
                     criterias_str += f"{j} "
                 criterias_str = criterias_str[:-1]
-                self.table[date.weekday()].add(Lesson({
+                self.schedule[date.weekday()].add(Lesson({
                     "type": "event",
                     "name": f"""{theme}, критерии """ + criterias_str + f" - самматив",
-                    "room": self.table[date.weekday()].lessons[i].room,
+                    "room": self.schedule[date.weekday()].lessons[i].room,
                     "group_name": group,
-                    "time_start": self.table[date.weekday()].lessons[i].time_start.strftime("%H:%M"),
-                    "time_end": self.table[date.weekday()].lessons[i + (1 if self.table[date.weekday()].lessons[i+1].name == subject else 0)].time_end.strftime("%H:%M")
+                    "time_start": self.schedule[date.weekday()].lessons[i].time_start.strftime("%H:%M"),
+                    "time_end": self.schedule[date.weekday()].lessons[i + (1 if self.schedule[date.weekday()].lessons[i+1].name == subject else 0)].time_end.strftime("%H:%M")
                 }))
                 
     def get_teachers(self):
