@@ -13,6 +13,9 @@ class GenerateICS:
         self.eatings.add("version", "2.0")
         self.calendar.add("prodid", "https://github.com/jonhef/generate-schedule-letovo")
         self.calendar.add("version", "2.0")
+        self.events = icalendar.Calendar()
+        self.events.add("prodid", "https://github.com/jonhef/generate-schedule-letovo")
+        self.events.add("version", "2.0")
         week = schedule.schedule
         for i in range(0, 7):
             for j in range(0, len(week[i].lessons)):
@@ -31,12 +34,16 @@ class GenerateICS:
                 #e.alarms.append(ics.alarm.DisplayAlarm(week[i].lessons[j].time_start - datetime.timedelta(minutes=5), display_text=f"{e.name} ({e.description})"))
                 if week[i].lessons[j].type == "eating":
                     self.eatings.add_component(e)
+                elif week[i].lessons[j].type == "events":
+                    self.events.add_component(e)
                 else:
                     self.calendar.add_component(e)
         return True
     
-    def save(self, path: str, path_eatings: str):
+    def save(self, path: str, path_eatings: str, path_events: str):
         with open(path, "w") as f:
             f.write(self.calendar.to_ical().decode())
         with open(path_eatings, "w") as f:
             f.write(self.eatings.to_ical().decode()) 
+        with open(path_events, "w") as f:
+            f.write(self.events.to_ical().decode())
