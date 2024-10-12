@@ -4,7 +4,7 @@ class Event(schedule.Task):
     pass
 
 def add_letovo_wednesday(schedule: schedule.Schedule):
-    schedule.schedule.week[2].lessons.append(Event({
+    schedule.schedule[2].lessons.append(Event({
         "type": "event",
         "name": "Летовская среда",
         "room": "Зимний сад",
@@ -12,7 +12,7 @@ def add_letovo_wednesday(schedule: schedule.Schedule):
         "time_start": "19:20",
         "time_end": "20:30"
     }))
-    schedule.schedule.week[2].sort()
+    schedule.schedule[2].sort()
 
 def add_event(schedule: schedule.Schedule, name: str, room: str, time_start: str, time_end: str, weekday: int):
     """schedule - your schedule where you want to add the event
@@ -20,7 +20,7 @@ def add_event(schedule: schedule.Schedule, name: str, room: str, time_start: str
     time_start - time when the event will start(in format %H:%M)
     time_end - time when the event will end(in format %H:%M)
     weekday - day of the week(0 - Monday to 6 - Sunday)"""
-    schedule.schedule.week[weekday].lessons.append(Event({
+    schedule.schedule[weekday].lessons.append(Event({
         "type": "event",
         "name": name,
         "room": room,
@@ -28,4 +28,4 @@ def add_event(schedule: schedule.Schedule, name: str, room: str, time_start: str
         "time_start": time_start,
         "time_end": time_end
     }))
-    schedule.schedule.week[weekday].sort()
+    schedule.schedule[weekday].sort()
