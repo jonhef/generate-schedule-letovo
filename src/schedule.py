@@ -135,6 +135,62 @@ class Schedule:
         return res
 
 class StudentLetovo(Schedule):
+    def get_me_student(self):
+        self._student_letovo_home()
+        req = self.session.get("https://student.letovo.ru/student/1", headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
+        }, cookies = {
+            "PHPSESSID": self.student_phpsessid
+        })
+        res = {}
+        res["Boarding"] = {"type": re.compile(r"<div class=\"col-sm-12 col-md-4 font-weight-bold\">Пансион</div>\s+<div class=\"col-sm-12 col-md-8\">\s+<span class=\"badge badge-info\">\s+([А-Яа-я]+)\s+</span>").findall(req.text)[0]}
+        res["FIO"] = re.compile(r"<div class=\"col-sm-12 col-md-4 font-weight-bold\">ФИО</div>\s+<div class=\"col-sm-12 col-md-8\">([А-Яа-я ]+)</div>").findall(req.text)[0]
+        res["Class"] = int(re.compile(r"<div class=\"row mb-1\">\s+<div class=\"col-sm-12 col-md-4 font-weight-bold\">Класс</div>\s+<div class=\"col-sm-12 col-md-8\">(\d+)</div>").findall(req.text)[0])
+        res["Login"] = re.compile(r"<div class=\"row mb-1\">\s+<div class=\"col-sm-12 col-md-4 font-weight-bold\">Логин</div>\s+<div class=\"col-sm-12 col-md-8\">([A-Za-z0-9.@]+)</div>\s+</div>").findall(req.text)[0]
+        res["Email"] = re.compile(r"<div class=\"row mb-1\">\s+<div class=\"col-sm-12 col-md-4 font-weight-bold\">Школьная почта</div>\s+<div class=\"col-sm-12 col-md-8\">([A-Za-z.@0-9]+)</div>\s+</div>").findall(req.text)[0]
+        res["RealEmail"] = re.compile(r"<div class=\"row mb-1\">\s+<div class=\"col-sm-12 col-md-4 font-weight-bold\">Личная почта</div>\s+<div class=\"col-sm-12 col-md-8\">\s+(.+)\s+</div>\s+</div>").findall(req.text)[0]
+        res["Number"] = re.compile(r"<div class=\"row mb-1\">\s+<div class=\"col-sm-12 col-md-4 font-weight-bold\">Мобильный номер</div>\s+<div class=\"col-sm-12 col-md-8\">\s+(.+)\s+</div>\s+</div>").findall(req.text)[0]
+        res["Boarding"]["house"] = re.compile(r"<br\/><span style=\"display: inline-block; width: 80px;\">Дом: <\/span>\s+<b>House (\d+)<\/b>\s+<br\/>").findall(req.text)[0]
+        res["Boarding"]["dorm"] = re.compile(r"<span style=\"display: inline-block; width: 80px;\">Комната: </span>\s+<b>Dorm (\d+)</b>").findall(req.text)[0]
+        
+        for k, v in res:
+            if v == "<i>нет доступа</i>":
+                res[k] = None
+                
+        self.student_me = res
+        return res
+
+    def add_eatings(self):
+        type_of_boarding = 2 if self.student_me["Boarding"]["type"] == "Полный" else (1 if self.student_me["Boarding"]["type"] == "Недельный" else 0)
+        if type_of_boarding == 2:
+            monday = eating.get_eatings_monday(self.class_n)
+            tuesday_friday = eating.get_eatings_tuesday_friday(self.class_n)
+            saturday = eating.get_eatings_saturday(self.class_n)
+            sunday = eating.get_eatings_sunday(self.class_n)
+        elif type_of_boarding == 1:
+            monday = eating.get_eatings_monday(self.class_n)
+            tuesday_friday = eating.get_eatings_tuesday_friday(self.class_n)
+            saturday = eating.get_eatings_saturday(self.class_n, night_snack = False)
+            sunday = {}
+        elif type_of_boarding == 0:
+            monday = eating.get_eatings_monday(self.class_n, dinner = False, night_snack=False)
+            tuesday_friday = eating.get_eatings_tuesday_friday(self.class_n, dinner = False, night_snack = False)
+            saturday = eating.get_eatings_saturday(self.class_n, dinner = False, night_snack = False)
+            sunday = {}
+            
+        for k, v in monday.items():
+                self.schedule[0].lessons.append(v)
+        for k, v in tuesday_friday.items():
+            for i in range(1, 5):
+                self.schedule[i].lessons.append(v)
+        for k, v in saturday.items():
+            self.schedule[5].lessons.append(v)
+        for k, v in sunday.items():
+            self.schedule[6].lessons.append(v)
+        for i in range(0, 7):
+            self.schedule[i].sort()
+    
     def login_student_letovo(self, login: str = None, password: str = None):
         self.student_login = login
         self.student_password = password
