@@ -152,7 +152,7 @@ class StudentLetovo(Schedule):
         if data is None:
             pass
         headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
-        self.session.post(url, data = data, headers = headers, cookies = cookies, verify=False)
+        return self.session.post(url, data = data, headers = headers, cookies = cookies, verify=False)
     
     def _request_get(self, url: str, headers: dict = None, cookies: dict = None):
         if headers is None:
@@ -160,7 +160,7 @@ class StudentLetovo(Schedule):
         if cookies is None:
             cookies = {}
         headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
-        self.session.get(url, headers = headers, cookies = cookies, verify=False)
+        return self.session.get(url, headers = headers, cookies = cookies, verify=False)
         
     def _request_student_html(self, url):
         return self._request_get(url, {
