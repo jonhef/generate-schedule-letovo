@@ -6,7 +6,6 @@ import json
 import re
 import regex
 import bs4
-import events
 import asyncio
 
 class Week:

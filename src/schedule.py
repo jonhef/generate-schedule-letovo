@@ -6,8 +6,34 @@ import json
 import re
 import regex
 import bs4
-import events
 
+def add_letovo_wednesday(schedule: "Schedule"):
+    schedule.schedule[2].lessons.append(Event({
+        "type": "event",
+        "name": "Летовская среда",
+        "room": "Зимний сад",
+        "group_name": "",
+        "time_start": "19:20",
+        "time_end": "20:30"
+    }))
+    schedule.schedule[2].sort()
+
+def add_event(schedule: "Schedule", name: str, room: str, time_start: str, time_end: str, weekday: int):
+    """schedule - your schedule where you want to add the event
+    room - room where the event will be
+    time_start - time when the event will start(in format %H:%M)
+    time_end - time when the event will end(in format %H:%M)
+    weekday - day of the week(0 - Monday to 6 - Sunday)"""
+    schedule.schedule[weekday].lessons.append(Event({
+        "type": "event",
+        "name": name,
+        "room": room,
+        "group_name": "",
+        "time_start": time_start,
+        "time_end": time_end
+    }))
+    schedule.schedule[weekday].sort()
+    
 class Week:
     def __init__(self, week: "list[Day]", date: datetime.datetime) -> None:
         self._week = week
@@ -77,6 +103,9 @@ class Task:
     def time(self) -> int:
         return self.time_start.hour * 60 * 60 + self.time_start.minute * 60 + self.time_start.second
     
+class Event(Task):
+    pass
+
 class HomeWork(Task):
     def __init__(self, homework: dict):
         super().__init__(homework)
@@ -141,7 +170,7 @@ class StudentLetovo(Schedule):
         self.get_teachers()
         for i in range(0,7):
             for l in res[i].lessons:
-                l.description = self.teachers_dict[l.name]
+                l.description = self.teachers_dict[l.name]["teacher"]
         return res
     
     def _request_post(self, url: str, headers: dict = None, cookies: dict = None, data: dict | str = None):
@@ -153,6 +182,9 @@ class StudentLetovo(Schedule):
             pass
         headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
         return self.session.post(url, data = data, headers = headers, cookies = cookies, verify=False)
+    
+    def add_letovo_wednesday(self):
+        add_letovo_wednesday(self)
     
     def _request_get(self, url: str, headers: dict = None, cookies: dict = None):
         if headers is None:
@@ -170,6 +202,10 @@ class StudentLetovo(Schedule):
             "PHPSESSID": self.student_phpsessid,
             "X-Csrf-Token": self.student_csrf
         })
+        
+    def add_house_meeting(self):
+        if self.student_me["Boarding"]["type"] == "Полный":
+            add_event(self, "House meeting", "Common room", "21:15", "21:30", 0)
     
     def get_me_student(self):
         self._student_letovo_home()
@@ -185,8 +221,8 @@ class StudentLetovo(Schedule):
         res["Boarding"]["house"] = re.compile(r"<br\/><span style=\"display: inline-block; width: 80px;\">Дом: <\/span>\s+<b>House (\d+)<\/b>\s+<br\/>").findall(req.text)[0]
         res["Boarding"]["dorm"] = re.compile(r"<span style=\"display: inline-block; width: 80px;\">Комната: </span>\s+<b>Dorm (\d+)</b>").findall(req.text)[0]
         
-        for k, v in res:
-            if v == "<i>нет доступа</i>":
+        for k in res:
+            if res[k] == "<i>нет доступа</i>":
                 res[k] = None
                 
         self.student_me = res
@@ -224,15 +260,15 @@ class StudentLetovo(Schedule):
             
     def add_assembly(self):
         if self.class_n == 7:
-            events.add_event(self.schedule, "Ассамблея", "Жёлтые диваны", "9:05", "9:25", 0)
+            add_event(self, "Ассамблея", "Жёлтые диваны", "9:05", "9:25", 0)
         elif self.class_n == 8:
-            events.add_event(self.schedule, "Ассамблея", "Малый спортиный зал", "9:05", "9:25", 0)
+            add_event(self, "Ассамблея", "Малый спортиный зал", "9:05", "9:25", 0)
         elif self.class_n == 9:
-            events.add_event(self.schedule, "Ассамблея", "Большой спортиный зал", "9:05", "9:25", 0)
+            add_event(self, "Ассамблея", "Большой спортиный зал", "9:05", "9:25", 0)
         elif self.class_n == 10:
-            events.add_event(self.schedule, "Ассамблея", "Лекторий", "9:05", "9:25", 0)
+            add_event(self, "Ассамблея", "Лекторий", "9:05", "9:25", 0)
         elif self.class_n == 11:
-            events.add_event(self.schedule, "Ассамблея", "Тихий зал", "9:05", "9:25", 0)
+            add_event(self, "Ассамблея", "Тихий зал", "9:05", "9:25", 0)
     
     def login_student_letovo(self, login: str = None, password: str = None):
         self.student_login = login
@@ -311,25 +347,17 @@ class StudentLetovo(Schedule):
         res_dict = {}
         for tr in table_fix.find_all("tr"):
             found = tr.find_all("td")
-            res.append({
-                "group": found[0].text,
-                "subject": found[1].text,
-                "teacher": found[2].text,
-                "hours_per_year": found[3].text,
-                "hours_per_week": found[4].text,
-                "level": found[5].text,
-                "theme": found[6].text,
-                "type": found[7].text
-            })
-            res_dict["subject"] = {
-                "group": found[0].text,
-                "teacher": found[2].text,
-                "hours_per_year": found[3].text,
-                "hours_per_week": found[4].text,
-                "level": found[5].text,
-                "theme": found[6].text,
-                "type": found[7].text
+            dic = {
+                "group": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[0].text)[0],
+                "subject": re.compile(r"\b([А-Яа-яA-Za-z0-9.() ]+)\s").findall(found[1].text)[0],
+                "teacher": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[2].text)[0],
+                "hours_per_year": re.compile(r"(\d+)").findall(found[3].text)[0],
+                "hours_per_week": re.compile(r"(\d+)").findall(found[4].text)[0],
+                "level": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[5].text)[0],
+                "type": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[6].text)[0]
             }
+            res.append(dic)
+            res_dict[dic["subject"]] = dic
         self.teachers_list = res
         self.teachers_dict = res_dict
         return res
@@ -353,6 +381,7 @@ class StudentLetovo(Schedule):
     def init(self, login = None, password = None):
         self.session = requests.session()
         self.login(login, password)
+        self.login_student_letovo()
         self.schedule = self.get_schedule()
         self.init_from_dict(self.me()["user"])
     
@@ -375,7 +404,7 @@ class StudentLetovo(Schedule):
         self.session.headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
         req = self._request_get("https://elk.letovo.ru")
         data = json.dumps({"email":login, "password":password, "params":[]})
-        req = self._request_post("https://elk.letovo.ru/api/login", data=data)
+        req = self._request_post("https://elk.letovo.ru/api/login", data=data, headers={"Content-Type": "application/json;charset=UTF-8"})
         if req.status_code == 401:
             logging.error("Login failed")
             return False
