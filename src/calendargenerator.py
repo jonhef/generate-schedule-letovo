@@ -26,7 +26,7 @@ class GenerateICS:
                 e.add("summary", week[i].lessons[j].name)
                 e.add("dtstart", datetime.datetime(week[i].date.year, week[i].date.month, week[i].date.day) + datetime.timedelta(minutes=week[i].lessons[j].time_start.minute, hours=week[i].lessons[j].time_start.hour))
                 e.add("dtend", datetime.datetime(week[i].date.year, week[i].date.month, week[i].date.day) + datetime.timedelta(minutes=week[i].lessons[j].time_end.minute, hours=week[i].lessons[j].time_end.hour))
-                e.add("description", f"{week[i].lessons[j].room}")
+                e.add("description", f"{week[i].lessons[j].description if week[i].lessons[j].description is not None else ''}")
                 e.add("location", week[i].lessons[j].room)
                 alarm = icalendar.Alarm()
                 alarm.add("trigger;value=date-time", (datetime.datetime(week[i].date.year, week[i].date.month, week[i].date.day) + datetime.timedelta(minutes=week[i].lessons[j].time_start.minute-5, hours=week[i].lessons[j].time_start.hour-3)).strftime("%Y%m%dT%H%M%S") + "Z")
