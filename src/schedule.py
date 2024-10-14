@@ -6,6 +6,7 @@ import json
 import re
 import regex
 import bs4
+import events
 
 class Week:
     def __init__(self, week: "list[Day]", date: datetime.datetime) -> None:
@@ -135,14 +136,44 @@ class Schedule:
         return res
 
 class StudentLetovo(Schedule):
-    def get_me_student(self):
-        self._student_letovo_home()
-        req = self.session.get("https://student.letovo.ru/student/1", headers = {
+    def get_schedule(self, first_day: datetime.datetime = None) -> Week:
+        res = super().get_schedule(first_day)
+        self.get_teachers()
+        for i in range(0,7):
+            for l in res[i].lessons:
+                l.description = self.teachers_dict[l.name]
+        return res
+    
+    def _request_post(self, url: str, headers: dict = None, cookies: dict = None, data: dict | str = None):
+        if headers is None:
+            headers = {}
+        if cookies is None:
+            cookies = {}
+        if data is None:
+            pass
+        headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
+        self.session.post(url, data = data, headers = headers, cookies = cookies, verify=False)
+    
+    def _request_get(self, url: str, headers: dict = None, cookies: dict = None):
+        if headers is None:
+            headers = {}
+        if cookies is None:
+            cookies = {}
+        headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
+        self.session.get(url, headers = headers, cookies = cookies, verify=False)
+        
+    def _request_student_html(self, url):
+        return self._request_get(url, {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
         }, cookies = {
-            "PHPSESSID": self.student_phpsessid
+            "PHPSESSID": self.student_phpsessid,
+            "X-Csrf-Token": self.student_csrf
         })
+    
+    def get_me_student(self):
+        self._student_letovo_home()
+        req = self._request_student_html("https://student.letovo.ru/student/1")
         res = {}
         res["Boarding"] = {"type": re.compile(r"<div class=\"col-sm-12 col-md-4 font-weight-bold\">Пансион</div>\s+<div class=\"col-sm-12 col-md-8\">\s+<span class=\"badge badge-info\">\s+([А-Яа-я]+)\s+</span>").findall(req.text)[0]}
         res["FIO"] = re.compile(r"<div class=\"col-sm-12 col-md-4 font-weight-bold\">ФИО</div>\s+<div class=\"col-sm-12 col-md-8\">([А-Яа-я ]+)</div>").findall(req.text)[0]
@@ -190,6 +221,18 @@ class StudentLetovo(Schedule):
             self.schedule[6].lessons.append(v)
         for i in range(0, 7):
             self.schedule[i].sort()
+            
+    def add_assembly(self):
+        if self.class_n == 7:
+            events.add_event(self.schedule, "Ассамблея", "Жёлтые диваны", "9:05", "9:25", 0)
+        elif self.class_n == 8:
+            events.add_event(self.schedule, "Ассамблея", "Малый спортиный зал", "9:05", "9:25", 0)
+        elif self.class_n == 9:
+            events.add_event(self.schedule, "Ассамблея", "Большой спортиный зал", "9:05", "9:25", 0)
+        elif self.class_n == 10:
+            events.add_event(self.schedule, "Ассамблея", "Лекторий", "9:05", "9:25", 0)
+        elif self.class_n == 11:
+            events.add_event(self.schedule, "Ассамблея", "Тихий зал", "9:05", "9:25", 0)
     
     def login_student_letovo(self, login: str = None, password: str = None):
         self.student_login = login
@@ -200,7 +243,7 @@ class StudentLetovo(Schedule):
             self.student_password = self.password
         verify = False # Set to False when using a proxy
 
-        r_csrf = self.session.get("https://student.letovo.ru/login", verify=verify)
+        r_csrf = self._request_get("https://student.letovo.ru/login")
         cookies = r_csrf.headers.get("Set-Cookie")
         phpsessid = regex.search("(?<=PHPSESSID=)[a-zA-Z0-9]+", cookies).group(0)
         csrf = regex.search("(?<=_token( )*:( )*')[a-zA-Z0-9]+", r_csrf.text).group(0)
@@ -209,44 +252,28 @@ class StudentLetovo(Schedule):
         # password = input("password: ")
         username = self.student_login
         password = self.student_password
-        r_login = self.session.post("https://student.letovo.ru/login", data=f"_token={csrf}&login={username}&password={password}", headers={
+        self.student_phpsessid = phpsessid
+        self.student_csrf = csrf
+        r_login = self._request_post("https://student.letovo.ru/login", data=f"_token={csrf}&login={username}&password={password}", headers={
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "X-Csrf-Token": csrf,
             "X-Requested-With": "XMLHttpRequest",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
-        }, cookies={
-            "PHPSESSID": phpsessid
-        }, verify=verify)
-        self.student_phpsessid = phpsessid
-        self.student_csrf = csrf
+        })
         self._student_letovo_home()
+        return r_login
 
         # print("PHPSESSID: " + phpsessid)
 
     def _student_letovo_home(self):
-        return self.session.get("https://student.letovo.ru/home", headers={
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
-        }, cookies = {
-            "PHPSESSID": self.student_phpsessid
-        })
+        return self._request_student_html("https://student.letovo.ru/home")
         
     def add_summatives(self):
         # https://student.letovo.ru/?r=student&part_student=summative
         req = self._student_letovo_home()
-        req = self.session.get("https://student.letovo.ru/student/academic/summatives", headers = {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
-        }, cookies = {
-            "PHPSESSID": self.student_phpsessid
-        })
-        req = self.session.get("https://student.letovo.ru/?r=student&part_student=summative", headers = {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
-        }, cookies={
-            "PHPSESSID": self.student_phpsessid
-        })
+        req = self._request_student_html("https://student.letovo.ru/student/academic/summatives")
+        req = self._request_student_html("https://student.letovo.ru/?r=student&part_student=summative")
         soup = bs4.BeautifulSoup(req.text, "html.parser")
         if soup.find(id="table_fix") is None:
             return
@@ -277,15 +304,11 @@ class StudentLetovo(Schedule):
                 
     def get_teachers(self):
         self._student_letovo_home()
-        req = self.session.get("https://student.letovo.ru/student/1/studyplan", headers={
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0",
-        }, cookies = {
-            "PHPSESSID": self.student_phpsessid
-        })
+        req = self._request_student_html("https://student.letovo.ru/student/1/studyplan")
         soup = bs4.BeautifulSoup(req.text, "html.parser")
         table_fix = soup.find(id="table_fix").find("tbody")
         res = []
+        res_dict = {}
         for tr in table_fix.find_all("tr"):
             found = tr.find_all("td")
             res.append({
@@ -298,7 +321,17 @@ class StudentLetovo(Schedule):
                 "theme": found[6].text,
                 "type": found[7].text
             })
-        self.teachers_dict = res
+            res_dict["subject"] = {
+                "group": found[0].text,
+                "teacher": found[2].text,
+                "hours_per_year": found[3].text,
+                "hours_per_week": found[4].text,
+                "level": found[5].text,
+                "theme": found[6].text,
+                "type": found[7].text
+            }
+        self.teachers_list = res
+        self.teachers_dict = res_dict
         return res
         
     def __init__(self, login = None, password = None):
@@ -314,26 +347,9 @@ class StudentLetovo(Schedule):
         self.email: str = student["email"]
         
     def me(self):
-        req = self.session.post("https://elk.letovo.ru/api/me", headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"})
+        req = self._request_post("https://elk.letovo.ru/api/me")
         return req.json()
     
-    def add_eatings(self):
-        monday = eating.get_eatings_monday(self.class_n)
-        tuesday_friday = eating.get_eatings_tuesday_friday(self.class_n)
-        saturday = eating.get_eatings_saturday(self.class_n)
-        sunday = eating.get_eatings_sunday(self.class_n)
-        for k, v in monday.items():
-            self.schedule[0].lessons.append(v)
-        for k, v in tuesday_friday.items():
-            for i in range(1, 5):
-                self.schedule[i].lessons.append(v)
-        for k, v in saturday.items():
-            self.schedule[5].lessons.append(v)
-        for k, v in sunday.items():
-            self.schedule[6].lessons.append(v)
-        for i in range(0, 7):
-            self.schedule[i].sort()
-        
     def init(self, login = None, password = None):
         self.session = requests.session()
         self.login(login, password)
@@ -357,40 +373,12 @@ class StudentLetovo(Schedule):
         self.email = login
         self.password = password
         self.session.headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
-        req = self.session.get("https://elk.letovo.ru")
-        # req = self.session.get("https://elk.letovo.ru/js/jquery.min.js")
-        # req = self.session.get("https://elk.letovo.ru/js/jquery-ui.js")
-        # req = self.session.get("https://elk.letovo.ru/js/datepicker-ru.js")
-        # req = self.session.get("https://elk.letovo.ru/js/app.js")
-        # req = self.session.get("https://elk.letovo.ru/js/svg.js")
-        # req = self.session.get("https://elk.letovo.ru/js/8602.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat/rocketchat-livechat.min.js")
-        # req = self.session.get("https://elk.letovo.ru/js/3335.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat")
-        # req = self.session.get("https://elk.letovo.ru/apple-touch-icon.png")
-        # req = self.session.get("https://elk.letovo.ru/favicon.svg")
-        # req = self.session.get("https://chat.letovo.ru/livechat/34248.85b13.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat/polyfills.a34ad.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat/77487.6fb16.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat/bundle.c3f51.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat/88157.chunk.7aaa4.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat/2728.chunk.18521.css")
-        # req = self.session.get("https://chat.letovo.ru/livechat/2728.chunk.3d2fa.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat/39537.chunk.a4bdf.js")
-        # req = self.session.get("https://chat.letovo.ru/api/v1/livechat/config")
-        # req = self.session.get("https://chat.letovo.ru/livechat/50482.chunk.714f6.js")
-        # req = self.session.get("https://chat.letovo.ru/livechat/86443.chunk.15f26.js")
-        # req = self.session.get("https://chat.letovo.ru/sounds/chime.mp3")
+        req = self._request_get("https://elk.letovo.ru")
         data = json.dumps({"email":login, "password":password, "params":[]})
-        req = self.session.post("https://elk.letovo.ru/api/login", data=data, headers={
-            "Content-Type": "application/json;charset=UTF-8",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
-        }, verify=False)
+        req = self._request_post("https://elk.letovo.ru/api/login", data=data)
         if req.status_code == 401:
             logging.error("Login failed")
             return False
         else:
             logging.info("Login successful")
             return True
-        
-    
