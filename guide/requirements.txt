@@ -3,3 +3,6 @@ re
 icalendar
 aiosqlite
 aiogram==3.13.1
+aiohttp
+beautifulsoup4
+regex
