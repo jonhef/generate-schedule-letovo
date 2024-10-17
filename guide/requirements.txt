@@ -1,5 +1,4 @@
 requests
-re
 icalendar
 aiosqlite
 aiogram==3.13.1
