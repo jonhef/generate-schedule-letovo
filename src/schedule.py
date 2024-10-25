@@ -144,6 +144,8 @@ class Schedule:
     def get_schedule(self, first_day: datetime.datetime = None) -> "Week":
         today = datetime.datetime.today() if first_day is None else first_day
         weekday = today.weekday()
+        if weekday == 6:
+            today = today + datetime.timedelta(days=1)
         if weekday != 0:
             today = today - datetime.timedelta(days=weekday)
         res = Week([], today)
@@ -168,9 +170,10 @@ class StudentLetovo(Schedule):
     def get_schedule(self, first_day: datetime.datetime = None) -> Week:
         res = super().get_schedule(first_day)
         self.get_teachers()
-        for i in range(0,7):
-            for l in res[i].lessons:
-                l.description = self.teachers_dict[l.name]["teacher"]
+        if self.got_teachers:
+            for i in range(0,7):
+                for l in res[i].lessons:
+                    l.description = self.teachers_dict[l.name]["teacher"]
         return res
     
     def _request_post(self, url: str, headers: dict = None, cookies: dict = None, data: dict | str = None):
@@ -203,8 +206,11 @@ class StudentLetovo(Schedule):
             "X-Csrf-Token": self.student_csrf
         })
         
+    def add_reminder_create_schedule(self):
+        add_event(self, "Создать расписание на неделю", "", "21:00", "21:15")     
+        
     def add_house_meeting(self):
-        if self.student_me["Boarding"]["type"] == "Полный":
+        if self.student_me["Boarding"]["type"] == "Полный" or self.student_me["Boarding"]["type"] == "Недельный":
             add_event(self, "House meeting", "Common room", "21:15", "21:30", 0)
     
     def get_me_student(self):
@@ -339,28 +345,32 @@ class StudentLetovo(Schedule):
                 }))
                 
     def get_teachers(self):
-        self._student_letovo_home()
-        req = self._request_student_html("https://student.letovo.ru/student/1/studyplan")
-        soup = bs4.BeautifulSoup(req.text, "html.parser")
-        table_fix = soup.find(id="table_fix").find("tbody")
-        res = []
-        res_dict = {}
-        for tr in table_fix.find_all("tr"):
-            found = tr.find_all("td")
-            dic = {
-                "group": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[0].text)[0],
-                "subject": re.compile(r"\b([А-Яа-яA-Za-z0-9.() ]+)\s").findall(found[1].text)[0],
-                "teacher": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[2].text)[0],
-                "hours_per_year": re.compile(r"(\d+)").findall(found[3].text)[0],
-                "hours_per_week": re.compile(r"(\d+)").findall(found[4].text)[0],
-                "level": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[5].text)[0],
-                "type": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[6].text)[0]
-            }
-            res.append(dic)
-            res_dict[dic["subject"]] = dic
-        self.teachers_list = res
-        self.teachers_dict = res_dict
-        return res
+        try:
+            self._student_letovo_home()
+            req = self._request_student_html("https://student.letovo.ru/student/1/studyplan")
+            soup = bs4.BeautifulSoup(req.text, "html.parser")
+            table_fix = soup.find(id="table_fix").find("tbody")
+            res = []
+            res_dict = {}
+            for tr in table_fix.find_all("tr"):
+                found = tr.find_all("td")
+                dic = {
+                    "group": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[0].text)[0],
+                    "subject": re.compile(r"\b([А-Яа-яA-Za-z0-9.() ]+)\s").findall(found[1].text)[0],
+                    "teacher": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[2].text)[0],
+                    "hours_per_year": re.compile(r"(\d+)").findall(found[3].text)[0],
+                    "hours_per_week": re.compile(r"(\d+)").findall(found[4].text)[0],
+                    "level": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[5].text)[0],
+                    "type": re.compile(r"\b([А-Яа-яA-Za-z0-9.() -]+)\b").findall(found[6].text)[0]
+                }
+                res.append(dic)
+                res_dict[dic["subject"]] = dic
+            self.teachers_list = res
+            self.teachers_dict = res_dict
+            self.got_teachers = True
+            return res
+        except:
+            self.got_teachers = False
         
     def __init__(self, login = None, password = None):
         self.init(login, password)
