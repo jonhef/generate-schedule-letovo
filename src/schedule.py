@@ -207,7 +207,7 @@ class StudentLetovo(Schedule):
         })
         
     def add_reminder_create_schedule(self):
-        add_event(self, "Создать расписание на неделю", "", "21:00", "21:15")     
+        add_event(self, "Создать расписание на неделю", "", "21:00", "21:15", 6)     
         
     def add_house_meeting(self):
         if self.student_me["Boarding"]["type"] == "Полный" or self.student_me["Boarding"]["type"] == "Недельный":
