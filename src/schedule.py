@@ -393,7 +393,10 @@ class StudentLetovo(Schedule):
     
     def init(self, login = None, password = None):
         self.session = requests.session()
-        self.login(login, password)
+        if not "@" in login: 
+            login = f"{login}@student.letovo.ru"
+        if not self.login(login, password):
+            throw Exception("Login failed")
         self.login_student_letovo()
         self.schedule = self.get_schedule()
         self.init_from_dict(self.me()["user"])
