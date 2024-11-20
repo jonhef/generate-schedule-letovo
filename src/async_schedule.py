@@ -282,7 +282,8 @@ class StudentLetovo(Schedule):
 
         r_csrf = await self._request_get("https://student.letovo.ru/login")
         cookies = r_csrf.headers.get("Set-Cookie")
-        phpsessid = regex.search("(?<=PHPSESSID=)[a-zA-Z0-9]+", cookies).group(0)
+        if self.student_phpsessid is None and cookies is not None:
+            phpsessid = regex.search("(?<=PHPSESSID=)[a-zA-Z0-9]+", cookies).group(0)
         csrf = regex.search("(?<=_token( )*:( )*')[a-zA-Z0-9]+", r_csrf.text).group(0)
         # print("CSRF: " + csrf)
         # username = input("username: ")

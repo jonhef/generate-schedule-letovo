@@ -6,7 +6,7 @@ if __name__ == "__main__":
     schedule = _schedule.StudentLetovo()
     schedule.login_student_letovo()
     schedule.get_me_student()
-    schedule.get_schedule()
+    schedule.get_schedule(datetime.datetime.today() + datetime.timedelta(1))
     schedule.add_letovo_wednesday()
     schedule.add_summatives()
     schedule.add_eatings()

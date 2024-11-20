@@ -287,7 +287,9 @@ class StudentLetovo(Schedule):
 
         r_csrf = self._request_get("https://student.letovo.ru/login")
         cookies = r_csrf.headers.get("Set-Cookie")
-        phpsessid = regex.search("(?<=PHPSESSID=)[a-zA-Z0-9]+", cookies).group(0)
+        if not self.student_phpsessid and cookies is not None:
+            phpsessid = regex.search("(?<=PHPSESSID=)[a-zA-Z0-9]+", cookies).group(0)
+        phpsessid = self.student_phpsessid
         csrf = regex.search("(?<=_token( )*:( )*')[a-zA-Z0-9]+", r_csrf.text).group(0)
         # print("CSRF: " + csrf)
         # username = input("username: ")
@@ -337,7 +339,7 @@ class StudentLetovo(Schedule):
                 criterias_str = criterias_str[:-1]
                 self.schedule[date.weekday()].add(Lesson({
                     "type": "event",
-                    "name": f"""{theme}, критерии """ + criterias_str + f" - самматив",
+                    "name": f"""{theme}, критерии """ + criterias_str + " - самматив",
                     "room": self.schedule[date.weekday()].lessons[i].room,
                     "group_name": group,
                     "time_start": self.schedule[date.weekday()].lessons[i].time_start.strftime("%H:%M"),
@@ -373,6 +375,7 @@ class StudentLetovo(Schedule):
             self.got_teachers = False
         
     def __init__(self, login = None, password = None):
+        self.student_phpsessid = None
         self.init(login, password)
         
     def init_from_dict(self, student: dict = None):
