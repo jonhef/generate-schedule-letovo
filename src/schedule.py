@@ -6,6 +6,9 @@ import json
 import re
 import regex
 import bs4
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def add_letovo_wednesday(schedule: "Schedule"):
     schedule.schedule[2].lessons.append(Event({
@@ -287,9 +290,10 @@ class StudentLetovo(Schedule):
 
         r_csrf = self._request_get("https://student.letovo.ru/login")
         cookies = r_csrf.headers.get("Set-Cookie")
-        if not self.student_phpsessid and cookies is not None:
+        if self.student_phpsessid is None and cookies is not None:
             phpsessid = regex.search("(?<=PHPSESSID=)[a-zA-Z0-9]+", cookies).group(0)
-        phpsessid = self.student_phpsessid
+        elif self.student_phpsessid is not None:
+            phpsessid = self.student_phpsessid
         csrf = regex.search("(?<=_token( )*:( )*')[a-zA-Z0-9]+", r_csrf.text).group(0)
         # print("CSRF: " + csrf)
         # username = input("username: ")
@@ -393,10 +397,11 @@ class StudentLetovo(Schedule):
     
     def init(self, login = None, password = None):
         self.session = requests.session()
-        if not "@" in login: 
-            login = f"{login}@student.letovo.ru"
+        if login is not None:
+            if not "@" in login: 
+                login = f"{login}@student.letovo.ru"
         if not self.login(login, password):
-            throw Exception("Login failed")
+            raise Exception("Login failed")
         self.login_student_letovo()
         self.schedule = self.get_schedule()
         self.init_from_dict(self.me()["user"])
@@ -415,6 +420,8 @@ class StudentLetovo(Schedule):
                 password = input("Please enter your password: ")
                 choice = input(f"Is your password {password}?(y/n)")
             print("-------------------------------")
+        if not "@" in login: 
+            login = f"{login}@student.letovo.ru"
         self.email = login
         self.password = password
         self.session.headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"

@@ -284,6 +284,8 @@ class StudentLetovo(Schedule):
         cookies = r_csrf.headers.get("Set-Cookie")
         if self.student_phpsessid is None and cookies is not None:
             phpsessid = regex.search("(?<=PHPSESSID=)[a-zA-Z0-9]+", cookies).group(0)
+        elif self.student_phpsessid is not None:
+            phpsessid = self.student_phpsessid
         csrf = regex.search("(?<=_token( )*:( )*')[a-zA-Z0-9]+", r_csrf.text).group(0)
         # print("CSRF: " + csrf)
         # username = input("username: ")
@@ -382,7 +384,11 @@ class StudentLetovo(Schedule):
     
     async def init(self, login = None, password = None):
         self.session = aiohttp.ClientSession()
-        await self.login(login, password)
+        if login is not None:
+            if not "@" in login:
+                login = f"{login}@student.letovo.ru"
+        if not await self.login(login, password):
+            raise Exception("Login failed")
         await self.login_student_letovo()
         self.schedule = await self.get_schedule()
         self.init_from_dict(self.me()["user"])
@@ -401,6 +407,8 @@ class StudentLetovo(Schedule):
                 password = input("Please enter your password: ")
                 choice = input(f"Is your password {password}?(y/n)")
             print("-------------------------------")
+        if not "@" in login:
+            login = f"{login}@student.letovo.ru"
         self.email = login
         self.password = password
         self.session.headers["User-Agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:130.0) Gecko/20100101 Firefox/130.0"
